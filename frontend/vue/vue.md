@@ -179,7 +179,6 @@
 1. 截取到数据变化，动过发布者-订阅者模式，触发watcher，从而改变虚拟DOM中的具体数据
 1. 通过改变虚拟DOM元素值，从而改变最后渲染DOM树的值，完成双向绑定。
 
-
 ### vue不能检测数组和对象的变化
 
 1. 对于对象，Vue 无法检测 property 的添加或移除。
@@ -271,6 +270,20 @@
 
 1. 绑定事件都是在dom上完成的，但所有的事件处理方法和表达式，都严格绑定在当前视图的viewModel上
 1. 常用有 click，dbclick, keydown, keyup, mouseover，mouseout, mousedown, contextmenu
+    1. 事件修饰符（可以串联）
+        1. native，原生修饰
+        1. stop，阻止事件继续传播，阻止冒泡，也用作禁止传入的方法执行，此时可以传下参数
+            1. 事件冒泡，当元素的事件被触发以后，会将事件转发给父级，层层传递一直到最顶层。
+        1. prevent，阻止原生事件 
+        1. capture，事件捕获，在事件穿透到内部元素时进行捕获，然后再发往内部（内部执行完又冒泡上来）
+        1. self 只处理自身触发的事件，对于冒泡之类的不管
+        1. once 事件只会触发一次
+        1. passive 不阻止默认事件触发，并使默认事件不再等待自定义事件执行完毕，直接立即执行
+    1. 按键修饰符
+        1. enter 回车，常用于`<input v-on:keyup.enter="submit">`，可以使用户按下回车触发提交事件
+        1. ...KeyboardEvent.key 下任意有效按键名转为 kebab-case 来作为修饰符。
+          1. tab，delete，esc，space，up，down，left，right，ctrl，alt, shift, meta
+          1. 鼠标 .left .right .middle
 
 ### v-bind:, 绑定属性（缩写：）
 
@@ -354,12 +367,45 @@
             1. Vue.observable( object ) 与 react hook比较像，可以用来优化响应式 provide
     1. vuex
 
+## mixins
 
-## mixin
+1. 类似与组件引用，不过打破了组件之间的隔和，像合体！！！
+    1. 单纯组件引用：父组件 + 子组件 => 父组件 + 子组件
+    1. mixins：父组件 + 子组件 => new父组件
+1. 将data、method、computed、生命钩子、引用的组件混入进组件中
+    1. **当命名冲突时，都是以组件为标准的，混入的就被忽略掉了**
+    1. **钩子例外，因为它是方法，所以会被混成一个数组方法，并按照混入钩子，自身钩子的顺序执行！！**
+    1. 这里都才用的是简单覆盖已有值的策略，如果想自定义如何合并，则有方法 Vue.config.optionMergeStrategies.[方法名] = function(toVal=组件, fromVal=被混入组件, Vue实例上下文) {// 返回合并后的值}
+1. 全局混入（慎用，在大型项目中资源消耗太大）
+    1. 混入后每一个实例都有
+        1. 一般把请求接口封装方法、简单工具函数混入等等
 
-## watch 与 计算属性
 
-## vue插槽 及其 优缺点
+## 计算属性 computed  与 侦听属性 watch
+
+1. 相同点
+    1. 自动监听依赖变量，从而动态的返回内容。在监听的值变化时，可以触发一个回调，并做一些事。
+1. 两者区别
+    1. 计算属性 只返回动态值
+    1. watch 知道值以后，可以进行业务逻辑执行
+1. 原理 （劫持早在生成变量之时就已经做了）
+    1. 在创建后，获取一遍内部变量，并在其内部的 Observe 进行 作为watcher 进行订阅者注册。
+    1. 当数据变化以后，observe 对 watcher 进行通知notify，计算属性、侦听属性再执行一遍自己，缓存数据或执行业务。
+1. computed 内部的方法可以写成 对象，有get和set方法，这样计算属性就可以不仅被获取，还可以被set值了
+1. computed 不可以接受参数， methhode可以；前者可以缓存，后者不行。
+1. computed 可以依赖其他 computed、或者其他组件的data （这是因为劫持早已经发生在其内部）
+1. watch 内部的方法可以写成 对象，{handler=通常的处理方法, deep深度，immediate 是否立即执行}
+
+## vue插槽 slot 及其 优缺点
+
+1. 当组件的 template 包含一个 slot 元素，在被引用的组件标签中的任何内容，都会被放到 slot 标签中去。若无，则中间内容会被抛弃。
+  1. 插槽的作用域只存在于组件中，不能访问到父组件中的值。**父级模板里的所有内容都是在父级作用域中编译的；子模板里的所有内容都是在子作用域中编译的。**
+      1. 但是我们可以给插槽绑定一个值:data="data",在再父级上使用v-slot:default="slotProps", 这样{{slotProps.user}} 就不会是undefined了。
+          1. 还可以把slotProps解构成{user} || {slotUser: user = {}}
+  1. default内容，可以直接写在子组件的 slot 中间
+  1. 当有多个插槽时，slot 的属性 name， 可以进行区分父组件的标签名、或 元素用 v-slot:[指定的名字] 这也是动态写法
+      1. 都没有的会被扔进 default slot，为了更准确使用插槽，可以加上 v-slot: default
+  1. 缩写 # = v-slot:
 
 ## vuex
 
@@ -731,27 +777,290 @@
 
 ## vue-router
 
+1. router-link标签，渲染为 a标签。
+    1. target属性，_blank新开一个页面，_self默认当前窗口，_parent父级窗口打开，_top打开新的浏览器
+1. 编程导航
+    1. router.push('/home') 会向history添加记录 === window.history.pushState
+    1. router.replace() 它不会向 history 添加新记录，而是跟它的方法名一样 —— 替换掉当前的 history 记录 === window.history.replaceState
+    1. router.go(n) 在 history 记录中向前或者后退多少步 === window.history.go
+1. $router 和 $route
+    1. $router 为 vueRouter 的实例，相当于一个全局路由器对象，history，命令跳转用的也是它 this.$router.push
+    1. $route 相当于当前正在跳转的路由对象，可以从里面获取name, path, params, query等
+1. 传参方式
+    1. 拼接path
+        1. ```this.$router.push({path:`/user/${userId}`})```
+        1. 这样传递需要的配置时 加上 path: user/:userId
+        1. 接受方式为 this.$route.params.userId (!!! route,当前页)
+    2. params 传递, 隐式传递
+        1. router.push({name: 'user', params: {userId: 123}})
+        1. this.$route.params.
+    3. query 类似拼接path
+        1. router.push({path: 'register', query: {plan: 'private'}})
+        1. this.$route.query.
+1. 配置中的 '/' 当以其为开头，则会被当成根路径，不会进行嵌套处理
+1. 匹配所有路由 path: *
+1. 嵌套路由 
+
+    ```
+      const router = new VueRouter({
+        routes: [
+          { 
+            name: 'index', // 非必须，用的时候要传成对象{name: index}
+            path: '/user/:id', 
+            component: User,
+            children: [
+              {
+                // 当 /user/:id/profile 匹配成功，
+                // UserProfile 会被渲染在 User 的 <router-view> 中
+                path: 'profile',
+                component: UserProfile
+              },
+              {
+                // 当 /user/:id/posts 匹配成功
+                // UserPosts 会被渲染在 User 的 <router-view> 中
+                path: 'posts',
+                component: UserPosts
+              }
+            ]
+          }
+        ]
+      })
+    ```
+1. 命名视图
+    1. 在布局页面，可以写上多个 router-view + name 属性
+    1. 这样配置时 components: {default: Foo,a: Bar,b: Baz} 用于展示不同组件了
+1. 重定向
+
+    ```
+    { path: '/a', redirect: '/b' ||  { name: 'foo' } || redirect: to => {
+      // 方法接收 目标路由 作为参数
+      // return 重定向的 字符串路径/路径对象
+    }}}
+    ```
+1. 别名， { path: '/a', component: A, alias: '/b' }， 当用户访问 /b 时，URL 会保持为 /b，但是路由匹配则为 /a，就像用户访问 /a 一样。
+1. HTML5 History 模式
+
+    ```
+    const router = new VueRouter({
+      mode: 'history',
+      routes: [
+        { path: '*', component: NotFoundComponent }
+      ]
+    })
+    ```
+    1. 需要后台支持，当用户访问域名下的其他url, 让后台返回index页，避免出现404
+        
+        ```
+        nignx 配置
+        location / {
+          try_files $uri $uri/ /index.html;
+        }
+        ```
+    1. 需要兜底处理404页面
+
+
+1. 路由守卫
+    1. 全局前置 router.beforeEach（(to, from, next) => {
+        // ...
+        next() 进行下一个守卫
+        next(false) 中断
+        next('/') 跳转 path，name，replace等等
+        next(error) 错误终止导航，进router.onError()回调
+      }）
+    1. 全局解析 router.beforeResolve
+        1. **同时在所有组件内守卫和异步路由组件被解析（进入等）之后**
+    1. 全局后置钩子 router.afterEach(to, from) 不接受next
+    1. 独享守卫，配置router时，添加
+    1. 组件内守卫
+        1. beforeRouteEnter 进入组件路由 // 不能访问 this，此时this还没创建
+        1. beforeRouteUpdate 改变组件路由
+        1. beforeRouteLeave 离开组件路由
+    1. 完整的导航解析流程
+        1. 导航被触发。
+        1. 在失活的组件里调用 beforeRouteLeave 守卫。
+        1. 调用全局的 beforeEach 守卫。
+        1. 在重用的组件里调用 beforeRouteUpdate 守卫 (2.2+)。
+        1. 在路由配置里调用 beforeEnter。
+        1. 解析异步路由组件。
+        1. 在被激活的组件里调用 beforeRouteEnter。
+        1. 调用全局的 beforeResolve 守卫 (2.5+)。
+        1. 导航被确认。
+        1. 调用全局的 afterEach 钩子。
+        1. 触发 DOM 更新。
+        1. 调用 beforeRouteEnter 守卫中传给 next 的回调函数，创建好的组件实例会作为回调函数的参数传入。
+    1. 若做redirect，一定要跳过自己，否则进死循环
+
+1. 路由原信息 meta，配置中自定义属性
+    1. 如何取？在导航守卫中遍历$route.matched 数组，el就是当前路由的meta信息
+1. 过度动效
+    1. transition
+1. 滚动行为 scrollBehavior (to, from, savedPosition=切换之前的位置) {// return 期望滚动到哪个的位置}
+1. 路由懒加载
+
+    ```
+    const router = new VueRouter({
+      routes: [
+        { path: '/foo', component: () => import('./Foo.vue') }
+      ]
+    })
+
+    // 分包，Webpack > 2.4，chunk name
+    const Foo = () => import(/* webpackChunkName: "group-foo" */ './Foo.vue')
+    ```
 
 ## vue性能优化
 
+1. v-if,v-shou区分场景
+1. 文件路由懒加载
+1. 长列表分页
+1. Webpack 优化
+    1. 图片压缩  image-webpack-loade 配置为 test:/png|jp?g$/,use:[{loader:'image-webpack-loade', options: {bypassOnDebug:true}}]
+    1. 提取公共代码 CommonsChunkPlugin
+1. gzip 压缩
+1. cdn
+1. 使用 chrome Performance 查找性能瓶颈
 
+## webpack
 
+1. entry // 检查入口，vue的main文件
+1. output // 出口文件 path地址，filename文件名
+1. loader 处理非JavaScript文件
 
-## webpack 配置
+    ```
+    // webpack.config.js
+    const path = require('path');
+
+    const config = {
+      output: {
+        filename: 'my-first-webpack.bundle.js'
+      },
+      module: {
+        rules: [
+          { test: /\.txt$/, use: 'raw-loader', options: {} } // test如何识别，use用什么loader,options选项
+        ]
+      }
+
+    };
+
+    module.exports = config;
+    ```
+    1. image-webpack-loade 压缩图片
+1. 插件（plugins）
+    ```
+    plugins: [
+      new HtmlWebpackPlugin({template: './src/index.html'})
+    ]
+    ```
+    1. CommonsChunkPlugin 提取 chunks 之间共享的通用模块
+1. 模式 （mode）development 开发 production 生产，文件名不一样，webpack.[mode].config.js
+1. 构建目标 targets 以什么环境进行编译
 
 ## vue-cli 配置（一个多入口开发，区别单入口）
 
-## vue3.0概况 hook
+1. 
 
-## js原型链
-  1. 闭包
+## js基础
+  1. 闭包 当一个函数返回另一个匿名函数时，且这个匿名函数依赖与其同级的变量，那么这个变量就不会因为函数执行完毕而销毁，被匿名函数保存了起来，匿名函数还可以取到
+      1. 优缺点
+        1. 优点：
+          1. 用闭包解决递归调用问题
+          1. 用闭包模仿块级作用域
+        1. 缺点：
+          1. 引用的变量可能发生变化
+          1. this指向问题，浏览器环境下指向window，node环境下指向当前模块对象module.exports
+          1. 内存泄露问题，闭包函数依赖变量没办法释放，除非主动释放
   1. 匿名函数
+      1. 没有实际名字的函数。
+      1. => 函数
+          1. this指向问题，通常会指向定义时它所处的对象（宿主对象），可能是某个类，可能是window，可能是当前模块对象module.exports
+          1. 用bind，或者传入this
   1. 原型链
-  1. 怎么从函数式编程发展到面向对象
+      1. prototype 每个函数都有一个prototype属性，这个属性指向函数的原型对象。
+      1. __proto__  这是每个对象(除null外)都会有的属性, 这个属性会指向该对象的原型。
+      1. 每个原型 constructor 指向关联的构造函数。
+      1. 实例与原型
+          1. 当读取实例的属性时，如果找不到，就会查找与对象关联的原型中的属性，如果还查不到，就去找原型的原型，一直找到最顶层为止。也就是作用域链
+      1. 原型的原型
+          1. 其实原型对象就是通过 Object 构造函数生成的
+      1. Object.prototype.__proto__ === null
+      [原型关系图](./prototype.png)
+  1. 作用域链 __proto__
+      1. 当在函数中使用一个变量的时候,首先在本函数内部查找该变量,如果找不到则找其父级函数的变量，直到最顶级，window或者当前模块对象module.exports。
 
 ## js类（代码抽象，面向对象）
 
-## this问题 （箭头函数的详解，this函数，对象内部的箭头函数的this问题）
+1. es5 及以前
+
+    ```
+      // 定义一个User类
+      (function(){
+            //定义类、构造函数
+            function User(name,age){
+                this.name=name;
+                this.age=age;
+            }
+ 
+            //定义原型方法
+            User.prototype.show=function(){
+                console.log('...');
+            }
+ 
+            //定义静态方法
+            User.run=function(){
+                console.log('...');
+            }
+ 
+            window.User=user;
+        })();
+
+        // 继承
+        function Father(){
+        }
+        Father.prototype.show=function(){
+        }
+ 
+        function Son(){
+            //继承第一句：让子类实例化的对象具备父类的所有属性
+            Father.apply(this,arguments);
+        }
+        //继承第二句：让子类实例化对象具备父类的所有原型方法
+        Son.prototype=Object.create(Father.prototype);
+ 
+        //继承第三句：找回丢失的构造函数
+        Son.prototype.constructor=Son;
+ 
+        Son.prototype.run=function(){}
+    ```
+1. es6 
+
+    ```
+    // 制作一个对象
+    class User{
+        //实例化类时默认会执行构造函数
+        constructor(name,age){
+            //初始化对象的语句
+            this.name=name;
+            this.age=age;
+        }
+
+        //原型方法
+        show(){
+            console.log('...');
+        }
+
+        //静态方法
+        static run(){
+            console.log('...');
+        }
+    }
+
+    // es6 继承
+    class Son extends Father{
+          constructor(){
+              super();
+          }
+      }
+    ```
 
 ## es6 到 es10
 
@@ -766,4 +1075,6 @@
 ## 遇到问题怎么解决问题，事件绑定，打桩，debug，网络错误代码分析
 
 ## 后端技术
+
+## meta 标签
 

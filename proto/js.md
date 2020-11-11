@@ -273,3 +273,33 @@
             }
 
             ```
+## 宏任务 和 微任务
+
+1. JS的本质是单线：
+    1. 非阻塞性的任务采取同步的方式，直接在主线程的执行栈完成。
+    1. 阻塞性的任务都会采用异步来执行，异步的工作一般会交给其他线程完成，然后回调函数会放到事件队列中。
+1. 当主线程的任务执行完了(执行栈空了)，JS会去询问事件队列，其中：
+    1. 执行一个宏任务(先执行同步代码)-->执行所有微任务-->UI render-->执行下一个宏任务-->执行所有微任务-->UI render-->......
+1. 哪些是宏任务、微任务呢?
+    1. 宏任务
+        #|浏览器|Node
+        ---|---|---
+        同步代码|√|√
+        UI rendering|√|√
+        I/O|√|√
+        setTimeout|√|√
+        setInterval|√|√
+        requestAnimationFrame|√|x
+        setImmediate|x|√
+    1. 微任务
+        #|浏览器|Node
+        ---|---|---
+        process.nextTick|x|√
+        Promise|√|√
+        MutationObserver|√|x
+1. 任务的优先级
+    1. 宏任务macrotask：主代码块 > setImmediate > MessageChannel > setTimeout / setInterval >...
+    1. 微任务microtask：process.nextTick > Promise = MutationObserver
+1. 结论
+    1. 任务执行的顺序是建立与优先级之上的
+    1. 如果队列已经有一个setTImeout的宏任务，后来又加入了主代码的宏任务，会让主代码的的任务插队。

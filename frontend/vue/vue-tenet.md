@@ -138,7 +138,7 @@
         1. 通过Compile来解析编译模板指令
         1. 最终利用Watcher搭起Observer和Compile之间的通信桥梁
             1. watcher获取数据时，被observe察觉到存入了订阅者数组中
-            1. watch又存着Compile接卸出来的虚拟DOM绑定的回调
+            1. watch又存着Compile解析出来的虚拟DOM绑定的回调
             1. 数据变化时，调用回调，更新虚拟DOM，根据特殊Diff算法，更新到真实DOM中
                 1. 特殊Diff算法
                     1. 从DOM树从上往下，依层检查，并对同层虚拟DOM树进行依次对比，若有key值则直接更新指定key值的DOM，不动其他的。

@@ -52,8 +52,8 @@
         1. 避免在shouldComponentUpdat中做一些比较复杂的操作，比如超大数据比较等。
         1. 合理设计state, 不需要渲染的state，尽量变为实例变量。
         1. 不需要渲染的props，合理使用context机制，或公共模块的变量来替换。
-            *context提供了一个无需为每层组件手动添加 props，就能在组件树间进行数据传递的方法。 类似hooks，这个针对的props，hooks针对的是state*
-            *vue类似的叫注入provide 和 inject*
+            **context提供了一个无需为每层组件手动添加 props，就能在组件树间进行数据传递的方法。 类似hooks，这个针对的props，hooks针对的是state**
+            **vue类似的叫注入provide 和 inject**
 1. 正确使用diff算法
     1. 不适用跨级移动节点的操作。
     1. 对于条件渲染多个节点时，尽量才用隐藏等方式切换节点，而不是替换节点。

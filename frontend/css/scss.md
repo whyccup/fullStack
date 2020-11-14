@@ -170,5 +170,5 @@
       @return $n*2;
     }
 
-    .box{width: mame}
+    .box{width: mame(1)}
     ```

@@ -42,11 +42,11 @@
         1. 制作一个劫持函数
 
             ```
+            // 递归监听子属性
             function observeProperty(data, key, val) {
                 const dep = new Dep() // 消息订阅器
-                observer(deepData) // 递归监听子属性
                 Object.defineProperty(data, key, {
-                  get () { // 劫持getter
+                  get (val) { // 劫持getter
                     Dep.target && dep.addSub(Dep.target) // 当target有值时，添加当前watcher
                     return val
                   }
